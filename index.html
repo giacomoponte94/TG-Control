@@ -1,386 +1,360 @@
-diff --git a/index b/index
-index 303ffaade0be12dce4ddc8aaa47a95b2c62fbe52..01199c5d190da5b13dff188af7825096e5059340 100644
---- a/index
-+++ b/index
-@@ -1,125 +1,309 @@
- <!DOCTYPE html>
--<html>
-+<html lang="pt-BR">
- <head>
--  <title>Controle</title>
-+  <meta charset="UTF-8" />
-+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-+  <title>TG Control</title>
-+  <style>
-+    body {
-+      font-family: Arial, sans-serif;
-+      background: #0f172a;
-+      color: #fff;
-+      text-align: center;
-+      padding: 20px;
-+      margin: 0;
-+    }
-+
-+    .wrap {
-+      max-width: 900px;
-+      margin: 0 auto;
-+    }
-+
-+    .status {
-+      display: inline-block;
-+      padding: 8px 14px;
-+      border-radius: 999px;
-+      margin-bottom: 16px;
-+      background: #1e293b;
-+      border: 1px solid #334155;
-+    }
-+
-+    .status.error { border-color: #ef4444; color: #fecaca; }
-+    .status.ok { border-color: #22c55e; color: #bbf7d0; }
-+
-+    .grid {
-+      display: grid;
-+      grid-template-columns: repeat(4, 1fr);
-+      gap: 10px;
-+      margin-bottom: 18px;
-+    }
-+
-+    .card {
-+      background: #1e293b;
-+      padding: 15px;
-+      border-radius: 10px;
-+      border: 1px solid #334155;
-+    }
-+
-+    .card h3 { margin: 0 0 8px; }
-+
-+    .panel {
-+      background: #1e293b;
-+      padding: 16px;
-+      border-radius: 10px;
-+      border: 1px solid #334155;
-+      margin-bottom: 12px;
-+    }
-+
-+    button {
-+      padding: 10px 16px;
-+      margin: 5px;
-+      border: none;
-+      border-radius: 8px;
-+      cursor: pointer;
-+      font-weight: bold;
-+    }
-+
-+    button:disabled { opacity: 0.6; cursor: not-allowed; }
-+
-+    .venda { background: #22c55e; }
-+    .compra { background: #3b82f6; color: #fff; }
-+    .despesa { background: #ef4444; color: #fff; }
-+    .sec { background: #475569; color: #fff; }
-+
-+    input, select {
-+      padding: 10px;
-+      margin: 5px;
-+      border-radius: 6px;
-+      border: 1px solid #475569;
-+      background: #0b1220;
-+      color: white;
-+      min-width: 150px;
-+    }
-+
-+    #feedback { min-height: 20px; color: #cbd5e1; }
-+    #feedback.error { color: #fecaca; }
-+    #feedback.ok { color: #bbf7d0; }
-+
-+    .hidden { display: none !important; }
-+
-+    @media (max-width: 700px) {
-+      .grid { grid-template-columns: repeat(2, 1fr); }
-+      input, select { width: calc(100% - 20px); }
-+    }
-+  </style>
- </head>
- <body>
-+<div class="wrap">
-+  <h2 id="status" class="status">Carregando...</h2>
- 
--<h2 id="status">Carregando...</h2>
--
--<div id="app" style="display:none;">
--  <p>Estoque: <span id="estoque"></span> mg</p>
--  <p>Receita: R$ <span id="receita"></span></p>
--  <p>Despesa: R$ <span id="despesa"></span></p>
--  <p>Lucro: R$ <span id="lucro"></span></p>
-+  <div id="login" class="panel">
-+    <input id="email" type="email" placeholder="email"><br>
-+    <input id="senha" type="password" placeholder="senha"><br>
-+    <button id="btnLogin" class="compra">Entrar</button>
-+  </div>
- 
--  <button onclick="venda()">Venda</button>
--  <button onclick="compra()">Compra</button>
--  <button onclick="despesa()">Despesa</button>
--</div>
-+  <div id="app" class="hidden">
-+    <div class="grid">
-+      <div class="card"><h3>Estoque</h3><p id="estoque">0 mg</p></div>
-+      <div class="card"><h3>Receita</h3><p id="receita">R$ 0,00</p></div>
-+      <div class="card"><h3>Despesa</h3><p id="despesa">R$ 0,00</p></div>
-+      <div class="card"><h3>Lucro</h3><p id="lucro">R$ 0,00</p></div>
-+    </div>
- 
--<div id="login">
--  <input id="email" placeholder="email"><br>
--  <input id="senha" type="password" placeholder="senha"><br>
--  <button onclick="logar()">Entrar</button>
-+    <div class="panel">
-+      <h3>Ações</h3>
-+      <select id="tipo">
-+        <option value="venda">Venda</option>
-+        <option value="compra">Compra</option>
-+        <option value="despesa">Despesa</option>
-+      </select>
-+      <input id="mg" type="number" step="0.01" placeholder="mg">
-+      <input id="valor" type="number" step="0.01" placeholder="valor">
-+      <br>
-+      <button id="btnSalvar" class="venda">Salvar</button>
-+      <button id="btnLimpar" class="sec">Limpar</button>
-+      <button id="btnLogout" class="despesa">Sair</button>
-+      <p id="feedback"></p>
-+    </div>
-+  </div>
- </div>
- 
- <script type="module">
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
--import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
--import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-+import { getFirestore, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
- 
- const firebaseConfig = {
-   apiKey: "AIzaSyCMa_S7hytGPJMgf2eBFqEgdjqAoQDRptE",
-   authDomain: "tg-control-da284.firebaseapp.com",
-   projectId: "tg-control-da284",
-   storageBucket: "tg-control-da284.firebasestorage.app",
-   messagingSenderId: "276471927298",
-   appId: "1:276471927298:web:a37d2c8f19f71ce9a6cd1b"
- };
- 
- const app = initializeApp(firebaseConfig);
- const auth = getAuth(app);
- const db = getFirestore(app);
- const ref = doc(db, "app", "dados");
- 
--const status = document.getElementById("status");
-+const statusEl = document.getElementById("status");
- const appDiv = document.getElementById("app");
- const loginDiv = document.getElementById("login");
-+const feedback = document.getElementById("feedback");
- 
--onAuthStateChanged(auth, user => {
--  if (user) {
--    loginDiv.style.display = "none";
--    appDiv.style.display = "block";
--    carregar();
--  } else {
--    loginDiv.style.display = "block";
--    appDiv.style.display = "none";
--    status.innerText = "Faça login";
--  }
--});
-+const btnLogin = document.getElementById("btnLogin");
-+const btnSalvar = document.getElementById("btnSalvar");
-+const btnLimpar = document.getElementById("btnLimpar");
-+const btnLogout = document.getElementById("btnLogout");
- 
--window.logar = async function() {
--  const email = document.getElementById("email").value;
--  const senha = document.getElementById("senha").value;
--  await signInWithEmailAndPassword(auth, email, senha);
--};
-+const tipo = document.getElementById("tipo");
-+const mgInput = document.getElementById("mg");
-+const valorInput = document.getElementById("valor");
- 
--async function carregar() {
--  const snap = await getDoc(ref);
--  const d = snap.data();
-+const money = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
- 
--  document.getElementById("estoque").innerText = d.estoque_mg;
--  document.getElementById("receita").innerText = d.receita_total;
--  document.getElementById("despesa").innerText = d.despesa_total;
--  document.getElementById("lucro").innerText = d.receita_total - d.despesa_total;
-+function setStatus(msg, state = "") {
-+  statusEl.textContent = msg;
-+  statusEl.className = `status ${state}`.trim();
-+}
- 
--  status.innerText = "OK";
-+function setFeedback(msg, state = "") {
-+  feedback.textContent = msg;
-+  feedback.className = state;
- }
- 
--window.venda = async function() {
--  const mg = Number(prompt("mg:"));
--  const valor = Number(prompt("valor:"));
-+function setBusy(busy) {
-+  [btnLogin, btnSalvar, btnLimpar, btnLogout].forEach((b) => b.disabled = busy);
-+}
- 
--  const snap = await getDoc(ref);
--  const d = snap.data();
-+function normalizeInputs() {
-+  const action = tipo.value;
-+  const mg = Number(mgInput.value);
-+  const valor = Number(valorInput.value);
- 
--  await updateDoc(ref, {
--    estoque_mg: d.estoque_mg - mg,
--    receita_total: d.receita_total + valor
--  });
-+  if (!Number.isFinite(valor) || valor <= 0) throw new Error("Valor deve ser maior que zero.");
-+  if (action !== "despesa" && (!Number.isFinite(mg) || mg <= 0)) throw new Error("mg deve ser maior que zero.");
- 
--  carregar();
--};
-+  return { action, mg: action === "despesa" ? 0 : mg, valor };
-+}
-+
-+function toggleMg() {
-+  mgInput.classList.toggle("hidden", tipo.value === "despesa");
-+}
- 
--window.compra = async function() {
--  const mg = Number(prompt("mg:"));
--  const custo = Number(prompt("custo:"));
-+toggleMg();
-+tipo.addEventListener("change", toggleMg);
- 
-+async function carregar() {
-   const snap = await getDoc(ref);
-+  if (!snap.exists()) throw new Error("Documento app/dados não encontrado.");
-+
-   const d = snap.data();
-+  const estoque = d.estoque_mg ?? 0;
-+  const receita = d.receita_total ?? 0;
-+  const despesa = d.despesa_total ?? 0;
- 
--  await updateDoc(ref, {
--    estoque_mg: d.estoque_mg + mg,
--    despesa_total: d.despesa_total + custo
--  });
-+  document.getElementById("estoque").innerText = `${estoque} mg`;
-+  document.getElementById("receita").innerText = `R$ ${money.format(receita)}`;
-+  document.getElementById("despesa").innerText = `R$ ${money.format(despesa)}`;
-+  document.getElementById("lucro").innerText = `R$ ${money.format(receita - despesa)}`;
- 
--  carregar();
--};
-+  setStatus("Atualizado", "ok");
-+}
- 
--window.despesa = async function() {
--  const valor = Number(prompt("valor:"));
-+async function salvarMovimentacao() {
-+  const { action, mg, valor } = normalizeInputs();
- 
--  const snap = await getDoc(ref);
--  const d = snap.data();
-+  await runTransaction(db, async (tx) => {
-+    const snap = await tx.get(ref);
-+    if (!snap.exists()) throw new Error("Documento app/dados não existe.");
-+
-+    const d = snap.data();
-+    const next = {
-+      estoque_mg: d.estoque_mg ?? 0,
-+      receita_total: d.receita_total ?? 0,
-+      despesa_total: d.despesa_total ?? 0
-+    };
-+
-+    if (action === "venda") {
-+      if (next.estoque_mg < mg) throw new Error("Estoque insuficiente.");
-+      next.estoque_mg -= mg;
-+      next.receita_total += valor;
-+    } else if (action === "compra") {
-+      next.estoque_mg += mg;
-+      next.despesa_total += valor;
-+    } else {
-+      next.despesa_total += valor;
-+    }
- 
--  await updateDoc(ref, {
--    despesa_total: d.despesa_total + valor
-+    tx.update(ref, next);
-   });
- 
--  carregar();
--};
-+  await carregar();
-+  setFeedback("Movimentação salva com sucesso.", "ok");
-+}
-+
-+function limparCampos() {
-+  mgInput.value = "";
-+  valorInput.value = "";
-+  setFeedback("");
-+}
-+
-+onAuthStateChanged(auth, async (user) => {
-+  if (user) {
-+    loginDiv.classList.add("hidden");
-+    appDiv.classList.remove("hidden");
-+    try {
-+      await carregar();
-+    } catch (err) {
-+      setStatus("Erro", "error");
-+      setFeedback(err.message || "Falha ao carregar.", "error");
-+    }
-+  } else {
-+    loginDiv.classList.remove("hidden");
-+    appDiv.classList.add("hidden");
-+    setStatus("Faça login");
-+  }
-+});
-+
-+btnLogin.addEventListener("click", async () => {
-+  setBusy(true);
-+  try {
-+    await signInWithEmailAndPassword(auth, document.getElementById("email").value.trim(), document.getElementById("senha").value);
-+    setFeedback("Login realizado.", "ok");
-+  } catch (err) {
-+    setStatus("Erro", "error");
-+    setFeedback(err.message || "Falha no login.", "error");
-+  } finally {
-+    setBusy(false);
-+  }
-+});
-+
-+btnSalvar.addEventListener("click", async () => {
-+  setBusy(true);
-+  try {
-+    await salvarMovimentacao();
-+  } catch (err) {
-+    setStatus("Erro", "error");
-+    setFeedback(err.message || "Erro ao salvar.", "error");
-+  } finally {
-+    setBusy(false);
-+  }
-+});
-+
-+btnLimpar.addEventListener("click", limparCampos);
-+btnLogout.addEventListener("click", async () => {
-+  setBusy(true);
-+  try {
-+    await signOut(auth);
-+    limparCampos();
-+  } finally {
-+    setBusy(false);
-+  }
-+});
- </script>
- 
- </body>
- </html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TG Control</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+
+    .status.error { border-color: #ef4444; color: #fecaca; }
+    .status.ok    { border-color: #22c55e; color: #bbf7d0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+
+    .card h3 { margin: 0 0 8px; }
+
+    .panel {
+      background: #1e293b;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      margin-bottom: 12px;
+    }
+
+    button {
+      padding: 10px 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-venda   { background: #22c55e; color: #000; }
+    .btn-compra  { background: #3b82f6; color: #fff; }
+    .btn-despesa { background: #ef4444; color: #fff; }
+    .btn-sec     { background: #475569; color: #fff; }
+
+    input, select {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0b1220;
+      color: white;
+      min-width: 150px;
+    }
+
+    .msg { min-height: 20px; color: #cbd5e1; margin: 6px 0 0; }
+    .msg.error { color: #fecaca; }
+    .msg.ok    { color: #bbf7d0; }
+
+    .lucro-neg { color: #fca5a5; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      input, select { width: calc(100% - 20px); }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h2 id="status" class="status">Carregando...</h2>
+
+  <div id="login" class="panel">
+    <input id="email" type="email" placeholder="Email" autocomplete="email"><br>
+    <input id="senha" type="password" placeholder="Senha" autocomplete="current-password"><br>
+    <button id="btnLogin" class="btn-compra">Entrar</button>
+    <p id="loginMsg" class="msg"></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="grid">
+      <div class="card"><h3>Estoque</h3><p id="estoque">0 mg</p></div>
+      <div class="card"><h3>Receita</h3><p id="receita">R$ 0,00</p></div>
+      <div class="card"><h3>Despesa</h3><p id="despesa">R$ 0,00</p></div>
+      <div class="card"><h3>Lucro</h3><p id="lucro">R$ 0,00</p></div>
+    </div>
+
+    <div class="panel">
+      <h3>Nova Movimentação</h3>
+      <select id="tipo">
+        <option value="venda">Venda</option>
+        <option value="compra">Compra</option>
+        <option value="despesa">Despesa</option>
+      </select>
+      <input id="mg" type="number" min="0.01" step="0.01" placeholder="Qtd (mg)">
+      <input id="valor" type="number" min="0.01" step="0.01" placeholder="Valor (R$)">
+      <br>
+      <button id="btnSalvar" class="btn-venda">Salvar Venda</button>
+      <button id="btnLimpar" class="btn-sec">Limpar</button>
+      <button id="btnLogout" class="btn-despesa">Sair</button>
+      <p id="appMsg" class="msg"></p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCMa_S7hytGPJMgf2eBFqEgdjqAoQDRptE",
+  authDomain: "tg-control-da284.firebaseapp.com",
+  projectId: "tg-control-da284",
+  storageBucket: "tg-control-da284.firebasestorage.app",
+  messagingSenderId: "276471927298",
+  appId: "1:276471927298:web:a37d2c8f19f71ce9a6cd1b"
+};
+
+const FIREBASE_ERRORS = {
+  "auth/invalid-credential":      "Email ou senha incorretos.",
+  "auth/user-not-found":          "Usuário não encontrado.",
+  "auth/wrong-password":          "Senha incorreta.",
+  "auth/invalid-email":           "Email inválido.",
+  "auth/user-disabled":           "Conta desativada.",
+  "auth/too-many-requests":       "Muitas tentativas. Tente novamente mais tarde.",
+  "auth/network-request-failed":  "Erro de rede. Verifique sua conexão.",
+};
+
+const SALVAR_LABEL = { venda: "Salvar Venda", compra: "Salvar Compra", despesa: "Registrar Despesa" };
+const SALVAR_CLASS = { venda: "btn-venda",    compra: "btn-compra",    despesa: "btn-despesa" };
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+const ref   = doc(db, "app", "dados");
+
+const statusEl  = document.getElementById("status");
+const appDiv    = document.getElementById("app");
+const loginDiv  = document.getElementById("login");
+const appMsg    = document.getElementById("appMsg");
+const loginMsg  = document.getElementById("loginMsg");
+const btnLogin  = document.getElementById("btnLogin");
+const btnSalvar = document.getElementById("btnSalvar");
+const btnLimpar = document.getElementById("btnLimpar");
+const btnLogout = document.getElementById("btnLogout");
+const tipo      = document.getElementById("tipo");
+const mgInput   = document.getElementById("mg");
+const valorInput = document.getElementById("valor");
+
+const fmtMoney = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtMg    = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+
+function setStatus(msg, state = "") {
+  statusEl.textContent = msg;
+  statusEl.className = `status ${state}`.trim();
+}
+
+function setMsg(el, msg, state = "") {
+  el.textContent = msg;
+  el.className = `msg ${state}`.trim();
+}
+
+function firebaseMsg(err) {
+  return FIREBASE_ERRORS[err.code] || err.message || "Erro desconhecido.";
+}
+
+function setLoginBusy(busy) {
+  btnLogin.disabled = busy;
+}
+
+function setAppBusy(busy) {
+  [btnSalvar, btnLimpar, btnLogout].forEach((b) => (b.disabled = busy));
+}
+
+function updateSalvarButton() {
+  const t = tipo.value;
+  btnSalvar.textContent = SALVAR_LABEL[t];
+  btnSalvar.className = SALVAR_CLASS[t];
+}
+
+function toggleMg() {
+  mgInput.classList.toggle("hidden", tipo.value === "despesa");
+}
+
+function onTipoChange() {
+  toggleMg();
+  updateSalvarButton();
+}
+
+onTipoChange();
+tipo.addEventListener("change", onTipoChange);
+
+function limparCampos() {
+  mgInput.value = "";
+  valorInput.value = "";
+  setMsg(appMsg, "");
+}
+
+function normalizeInputs() {
+  const action = tipo.value;
+  const mgVal  = Number(mgInput.value);
+  const val    = Number(valorInput.value);
+
+  if (!Number.isFinite(val) || val <= 0)
+    throw new Error("Valor deve ser maior que zero.");
+  if (action !== "despesa" && (!Number.isFinite(mgVal) || mgVal <= 0))
+    throw new Error("Quantidade em mg deve ser maior que zero.");
+
+  return { action, mg: action === "despesa" ? 0 : mgVal, valor: val };
+}
+
+async function carregar() {
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("Documento app/dados não encontrado.");
+
+  const d       = snap.data();
+  const estoque = d.estoque_mg    ?? 0;
+  const receita = d.receita_total ?? 0;
+  const despesa = d.despesa_total ?? 0;
+  const lucro   = receita - despesa;
+
+  document.getElementById("estoque").textContent = `${fmtMg.format(estoque)} mg`;
+  document.getElementById("receita").textContent = `R$ ${fmtMoney.format(receita)}`;
+  document.getElementById("despesa").textContent = `R$ ${fmtMoney.format(despesa)}`;
+
+  const lucroEl = document.getElementById("lucro");
+  lucroEl.textContent = `R$ ${fmtMoney.format(lucro)}`;
+  lucroEl.className   = lucro < 0 ? "lucro-neg" : "";
+
+  setStatus("Atualizado", "ok");
+}
+
+async function salvarMovimentacao() {
+  const { action, mg: mgVal, valor } = normalizeInputs();
+
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Documento app/dados não existe.");
+
+    const d    = snap.data();
+    const next = {
+      estoque_mg:    d.estoque_mg    ?? 0,
+      receita_total: d.receita_total ?? 0,
+      despesa_total: d.despesa_total ?? 0,
+    };
+
+    if (action === "venda") {
+      if (next.estoque_mg < mgVal) throw new Error("Estoque insuficiente.");
+      next.estoque_mg    -= mgVal;
+      next.receita_total += valor;
+    } else if (action === "compra") {
+      next.estoque_mg    += mgVal;
+      next.despesa_total += valor;
+    } else {
+      next.despesa_total += valor;
+    }
+
+    tx.update(ref, next);
+  });
+
+  await carregar();
+  setMsg(appMsg, "Movimentação salva com sucesso.", "ok");
+  limparCampos();
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    loginDiv.classList.add("hidden");
+    appDiv.classList.remove("hidden");
+    setMsg(loginMsg, "");
+    try {
+      await carregar();
+    } catch (err) {
+      setStatus("Erro ao carregar", "error");
+      setMsg(appMsg, err.message || "Falha ao carregar.", "error");
+    }
+  } else {
+    loginDiv.classList.remove("hidden");
+    appDiv.classList.add("hidden");
+    setStatus("Faça login");
+  }
+});
+
+btnLogin.addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value;
+
+  if (!email) { setMsg(loginMsg, "Informe o email.", "error"); return; }
+  if (!senha) { setMsg(loginMsg, "Informe a senha.", "error"); return; }
+
+  setLoginBusy(true);
+  setMsg(loginMsg, "");
+  try {
+    await signInWithEmailAndPassword(auth, email, senha);
+  } catch (err) {
+    setMsg(loginMsg, firebaseMsg(err), "error");
+  } finally {
+    setLoginBusy(false);
+  }
+});
+
+btnSalvar.addEventListener("click", async () => {
+  setAppBusy(true);
+  setMsg(appMsg, "");
+  try {
+    await salvarMovimentacao();
+  } catch (err) {
+    setStatus("Erro", "error");
+    setMsg(appMsg, err.message || "Erro ao salvar.", "error");
+  } finally {
+    setAppBusy(false);
+  }
+});
+
+btnLimpar.addEventListener("click", limparCampos);
+
+btnLogout.addEventListener("click", async () => {
+  setAppBusy(true);
+  try {
+    await signOut(auth);
+  } catch (err) {
+    setMsg(appMsg, err.message || "Erro ao sair.", "error");
+  } finally {
+    setAppBusy(false);
+  }
+});
+</script>
+
+</body>
+</html>
