@@ -1,272 +1,386 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TG Control</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card: #111827;
-      --muted: #94a3b8;
-      --text: #e5e7eb;
-      --primary: #22c55e;
-      --primary-2: #16a34a;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --border: #1f2937;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, sans-serif;
-      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 45%);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    .container { width: min(980px, 100%); }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    h1 { margin: 0; }
-
-    .status {
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--warning);
-    }
-
-    .ok .dot { background: var(--primary); }
-    .error .dot { background: var(--danger); }
-
-    .card {
-      background: var(--card);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-
-    .metric small { color: var(--muted); }
-
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 10px;
-      padding: 10px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .primary { background: var(--primary); }
-    .secondary { background: #334155; color: white; }
-    .danger { background: #7f1d1d; color: white; }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      background: #0b1220;
-      color: white;
-    }
-
-    .hidden { display: none; }
-  </style>
-</head>
-<body>
-
-<div class="container">
-
-  <div class="topbar">
-    <h1>TG Control</h1>
-    <div id="status" class="status"><div class="dot"></div><span id="statusText">...</span></div>
-  </div>
-
-  <div id="login" class="card">
-    <input id="email" placeholder="email"><br><br>
-    <input id="senha" type="password" placeholder="senha"><br><br>
-    <button id="btnLogin" class="primary">Entrar</button>
-  </div>
-
-  <div id="app" class="hidden">
-
-    <div class="card">
-      <div class="grid">
-        <div class="metric"><small>Estoque</small><div id="estoque"></div></div>
-        <div class="metric"><small>Receita</small><div id="receita"></div></div>
-        <div class="metric"><small>Despesa</small><div id="despesa"></div></div>
-        <div class="metric"><small>Lucro</small><div id="lucro"></div></div>
-      </div>
-
-      <div class="actions">
-        <button id="btnVenda" class="primary">Venda</button>
-        <button id="btnCompra" class="secondary">Compra</button>
-        <button id="btnDespesa" class="danger">Despesa</button>
-      </div>
-
-      <p id="feedback"></p>
-    </div>
-
-    <div class="card">
-      <input id="mg" placeholder="mg" class="hidden">
-      <input id="valor" placeholder="valor">
-
-      <br><br>
-
-      <button id="confirmar" class="primary">Confirmar</button>
-      <button id="cancelar" class="secondary">Cancelar</button>
-      <button id="logout" class="danger">Sair</button>
-    </div>
-
-  </div>
-
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "tg-control-da284.firebaseapp.com",
-  projectId: "tg-control-da284",
-  storageBucket: "tg-control-da284.firebasestorage.app",
-  messagingSenderId: "276471927298",
-  appId: "1:276471927298:web:a37d2c8f19f71ce9a6cd1b"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const ref = doc(db, "app", "dados");
-
-let acao = null;
-
-function setStatus(t, type="") {
-  statusText.innerText = t;
-  status.className = "status " + type;
-}
-
-function feedbackMsg(t) {
-  feedback.innerText = t;
-}
-
-async function carregar() {
-  const snap = await getDoc(ref);
-  const d = snap.data();
-
-  estoque.innerText = d.estoque_mg;
-  receita.innerText = d.receita_total;
-  despesa.innerText = d.despesa_total;
-  lucro.innerText = d.receita_total - d.despesa_total;
-
-  setStatus("OK","ok");
-}
-
-function iniciar(tipo){
-  acao = tipo;
-  mg.classList.toggle("hidden", tipo==="despesa");
-  mg.focus();
-}
-
-async function confirmarMov(){
-  const v = Number(valor.value);
-  const m = acao !== "despesa" ? Number(mg.value) : 0;
-
-  await runTransaction(db, async (t)=>{
-    const snap = await t.get(ref);
-    const d = snap.data();
-
-    if(acao==="venda"){
-      if(d.estoque_mg < m) throw "Sem estoque";
-      t.update(ref,{
-        estoque_mg: d.estoque_mg - m,
-        receita_total: d.receita_total + v
-      });
-    }
-
-    if(acao==="compra"){
-      t.update(ref,{
-        estoque_mg: d.estoque_mg + m,
-        despesa_total: d.despesa_total + v
-      });
-    }
-
-    if(acao==="despesa"){
-      t.update(ref,{
-        despesa_total: d.despesa_total + v
-      });
-    }
-  });
-
-  valor.value="";
-  mg.value="";
-  carregar();
-  feedbackMsg("Salvo");
-}
-
-onAuthStateChanged(auth, user=>{
-  if(user){
-    login.classList.add("hidden");
-    app.classList.remove("hidden");
-    carregar();
-  }else{
-    login.classList.remove("hidden");
-    app.classList.add("hidden");
-  }
-});
-
-btnLogin.onclick = async ()=>{
-  await signInWithEmailAndPassword(auth,email.value,senha.value);
-};
-
-btnVenda.onclick = ()=>iniciar("venda");
-btnCompra.onclick = ()=>iniciar("compra");
-btnDespesa.onclick = ()=>iniciar("despesa");
-
-confirmar.onclick = confirmarMov;
-cancelar.onclick = ()=>{valor.value=""; mg.value="";};
-logout.onclick = ()=>signOut(auth);
-
-valor.addEventListener("keypress", e=>{
-  if(e.key==="Enter") confirmarMov();
-});
-</script>
-
-</body>
-</html>
+diff --git a/index b/index
+index 303ffaade0be12dce4ddc8aaa47a95b2c62fbe52..01199c5d190da5b13dff188af7825096e5059340 100644
+--- a/index
++++ b/index
+@@ -1,125 +1,309 @@
+ <!DOCTYPE html>
+-<html>
++<html lang="pt-BR">
+ <head>
+-  <title>Controle</title>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>TG Control</title>
++  <style>
++    body {
++      font-family: Arial, sans-serif;
++      background: #0f172a;
++      color: #fff;
++      text-align: center;
++      padding: 20px;
++      margin: 0;
++    }
++
++    .wrap {
++      max-width: 900px;
++      margin: 0 auto;
++    }
++
++    .status {
++      display: inline-block;
++      padding: 8px 14px;
++      border-radius: 999px;
++      margin-bottom: 16px;
++      background: #1e293b;
++      border: 1px solid #334155;
++    }
++
++    .status.error { border-color: #ef4444; color: #fecaca; }
++    .status.ok { border-color: #22c55e; color: #bbf7d0; }
++
++    .grid {
++      display: grid;
++      grid-template-columns: repeat(4, 1fr);
++      gap: 10px;
++      margin-bottom: 18px;
++    }
++
++    .card {
++      background: #1e293b;
++      padding: 15px;
++      border-radius: 10px;
++      border: 1px solid #334155;
++    }
++
++    .card h3 { margin: 0 0 8px; }
++
++    .panel {
++      background: #1e293b;
++      padding: 16px;
++      border-radius: 10px;
++      border: 1px solid #334155;
++      margin-bottom: 12px;
++    }
++
++    button {
++      padding: 10px 16px;
++      margin: 5px;
++      border: none;
++      border-radius: 8px;
++      cursor: pointer;
++      font-weight: bold;
++    }
++
++    button:disabled { opacity: 0.6; cursor: not-allowed; }
++
++    .venda { background: #22c55e; }
++    .compra { background: #3b82f6; color: #fff; }
++    .despesa { background: #ef4444; color: #fff; }
++    .sec { background: #475569; color: #fff; }
++
++    input, select {
++      padding: 10px;
++      margin: 5px;
++      border-radius: 6px;
++      border: 1px solid #475569;
++      background: #0b1220;
++      color: white;
++      min-width: 150px;
++    }
++
++    #feedback { min-height: 20px; color: #cbd5e1; }
++    #feedback.error { color: #fecaca; }
++    #feedback.ok { color: #bbf7d0; }
++
++    .hidden { display: none !important; }
++
++    @media (max-width: 700px) {
++      .grid { grid-template-columns: repeat(2, 1fr); }
++      input, select { width: calc(100% - 20px); }
++    }
++  </style>
+ </head>
+ <body>
++<div class="wrap">
++  <h2 id="status" class="status">Carregando...</h2>
+ 
+-<h2 id="status">Carregando...</h2>
+-
+-<div id="app" style="display:none;">
+-  <p>Estoque: <span id="estoque"></span> mg</p>
+-  <p>Receita: R$ <span id="receita"></span></p>
+-  <p>Despesa: R$ <span id="despesa"></span></p>
+-  <p>Lucro: R$ <span id="lucro"></span></p>
++  <div id="login" class="panel">
++    <input id="email" type="email" placeholder="email"><br>
++    <input id="senha" type="password" placeholder="senha"><br>
++    <button id="btnLogin" class="compra">Entrar</button>
++  </div>
+ 
+-  <button onclick="venda()">Venda</button>
+-  <button onclick="compra()">Compra</button>
+-  <button onclick="despesa()">Despesa</button>
+-</div>
++  <div id="app" class="hidden">
++    <div class="grid">
++      <div class="card"><h3>Estoque</h3><p id="estoque">0 mg</p></div>
++      <div class="card"><h3>Receita</h3><p id="receita">R$ 0,00</p></div>
++      <div class="card"><h3>Despesa</h3><p id="despesa">R$ 0,00</p></div>
++      <div class="card"><h3>Lucro</h3><p id="lucro">R$ 0,00</p></div>
++    </div>
+ 
+-<div id="login">
+-  <input id="email" placeholder="email"><br>
+-  <input id="senha" type="password" placeholder="senha"><br>
+-  <button onclick="logar()">Entrar</button>
++    <div class="panel">
++      <h3>Ações</h3>
++      <select id="tipo">
++        <option value="venda">Venda</option>
++        <option value="compra">Compra</option>
++        <option value="despesa">Despesa</option>
++      </select>
++      <input id="mg" type="number" step="0.01" placeholder="mg">
++      <input id="valor" type="number" step="0.01" placeholder="valor">
++      <br>
++      <button id="btnSalvar" class="venda">Salvar</button>
++      <button id="btnLimpar" class="sec">Limpar</button>
++      <button id="btnLogout" class="despesa">Sair</button>
++      <p id="feedback"></p>
++    </div>
++  </div>
+ </div>
+ 
+ <script type="module">
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
++import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
++import { getFirestore, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+ 
+ const firebaseConfig = {
+   apiKey: "AIzaSyCMa_S7hytGPJMgf2eBFqEgdjqAoQDRptE",
+   authDomain: "tg-control-da284.firebaseapp.com",
+   projectId: "tg-control-da284",
+   storageBucket: "tg-control-da284.firebasestorage.app",
+   messagingSenderId: "276471927298",
+   appId: "1:276471927298:web:a37d2c8f19f71ce9a6cd1b"
+ };
+ 
+ const app = initializeApp(firebaseConfig);
+ const auth = getAuth(app);
+ const db = getFirestore(app);
+ const ref = doc(db, "app", "dados");
+ 
+-const status = document.getElementById("status");
++const statusEl = document.getElementById("status");
+ const appDiv = document.getElementById("app");
+ const loginDiv = document.getElementById("login");
++const feedback = document.getElementById("feedback");
+ 
+-onAuthStateChanged(auth, user => {
+-  if (user) {
+-    loginDiv.style.display = "none";
+-    appDiv.style.display = "block";
+-    carregar();
+-  } else {
+-    loginDiv.style.display = "block";
+-    appDiv.style.display = "none";
+-    status.innerText = "Faça login";
+-  }
+-});
++const btnLogin = document.getElementById("btnLogin");
++const btnSalvar = document.getElementById("btnSalvar");
++const btnLimpar = document.getElementById("btnLimpar");
++const btnLogout = document.getElementById("btnLogout");
+ 
+-window.logar = async function() {
+-  const email = document.getElementById("email").value;
+-  const senha = document.getElementById("senha").value;
+-  await signInWithEmailAndPassword(auth, email, senha);
+-};
++const tipo = document.getElementById("tipo");
++const mgInput = document.getElementById("mg");
++const valorInput = document.getElementById("valor");
+ 
+-async function carregar() {
+-  const snap = await getDoc(ref);
+-  const d = snap.data();
++const money = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+ 
+-  document.getElementById("estoque").innerText = d.estoque_mg;
+-  document.getElementById("receita").innerText = d.receita_total;
+-  document.getElementById("despesa").innerText = d.despesa_total;
+-  document.getElementById("lucro").innerText = d.receita_total - d.despesa_total;
++function setStatus(msg, state = "") {
++  statusEl.textContent = msg;
++  statusEl.className = `status ${state}`.trim();
++}
+ 
+-  status.innerText = "OK";
++function setFeedback(msg, state = "") {
++  feedback.textContent = msg;
++  feedback.className = state;
+ }
+ 
+-window.venda = async function() {
+-  const mg = Number(prompt("mg:"));
+-  const valor = Number(prompt("valor:"));
++function setBusy(busy) {
++  [btnLogin, btnSalvar, btnLimpar, btnLogout].forEach((b) => b.disabled = busy);
++}
+ 
+-  const snap = await getDoc(ref);
+-  const d = snap.data();
++function normalizeInputs() {
++  const action = tipo.value;
++  const mg = Number(mgInput.value);
++  const valor = Number(valorInput.value);
+ 
+-  await updateDoc(ref, {
+-    estoque_mg: d.estoque_mg - mg,
+-    receita_total: d.receita_total + valor
+-  });
++  if (!Number.isFinite(valor) || valor <= 0) throw new Error("Valor deve ser maior que zero.");
++  if (action !== "despesa" && (!Number.isFinite(mg) || mg <= 0)) throw new Error("mg deve ser maior que zero.");
+ 
+-  carregar();
+-};
++  return { action, mg: action === "despesa" ? 0 : mg, valor };
++}
++
++function toggleMg() {
++  mgInput.classList.toggle("hidden", tipo.value === "despesa");
++}
+ 
+-window.compra = async function() {
+-  const mg = Number(prompt("mg:"));
+-  const custo = Number(prompt("custo:"));
++toggleMg();
++tipo.addEventListener("change", toggleMg);
+ 
++async function carregar() {
+   const snap = await getDoc(ref);
++  if (!snap.exists()) throw new Error("Documento app/dados não encontrado.");
++
+   const d = snap.data();
++  const estoque = d.estoque_mg ?? 0;
++  const receita = d.receita_total ?? 0;
++  const despesa = d.despesa_total ?? 0;
+ 
+-  await updateDoc(ref, {
+-    estoque_mg: d.estoque_mg + mg,
+-    despesa_total: d.despesa_total + custo
+-  });
++  document.getElementById("estoque").innerText = `${estoque} mg`;
++  document.getElementById("receita").innerText = `R$ ${money.format(receita)}`;
++  document.getElementById("despesa").innerText = `R$ ${money.format(despesa)}`;
++  document.getElementById("lucro").innerText = `R$ ${money.format(receita - despesa)}`;
+ 
+-  carregar();
+-};
++  setStatus("Atualizado", "ok");
++}
+ 
+-window.despesa = async function() {
+-  const valor = Number(prompt("valor:"));
++async function salvarMovimentacao() {
++  const { action, mg, valor } = normalizeInputs();
+ 
+-  const snap = await getDoc(ref);
+-  const d = snap.data();
++  await runTransaction(db, async (tx) => {
++    const snap = await tx.get(ref);
++    if (!snap.exists()) throw new Error("Documento app/dados não existe.");
++
++    const d = snap.data();
++    const next = {
++      estoque_mg: d.estoque_mg ?? 0,
++      receita_total: d.receita_total ?? 0,
++      despesa_total: d.despesa_total ?? 0
++    };
++
++    if (action === "venda") {
++      if (next.estoque_mg < mg) throw new Error("Estoque insuficiente.");
++      next.estoque_mg -= mg;
++      next.receita_total += valor;
++    } else if (action === "compra") {
++      next.estoque_mg += mg;
++      next.despesa_total += valor;
++    } else {
++      next.despesa_total += valor;
++    }
+ 
+-  await updateDoc(ref, {
+-    despesa_total: d.despesa_total + valor
++    tx.update(ref, next);
+   });
+ 
+-  carregar();
+-};
++  await carregar();
++  setFeedback("Movimentação salva com sucesso.", "ok");
++}
++
++function limparCampos() {
++  mgInput.value = "";
++  valorInput.value = "";
++  setFeedback("");
++}
++
++onAuthStateChanged(auth, async (user) => {
++  if (user) {
++    loginDiv.classList.add("hidden");
++    appDiv.classList.remove("hidden");
++    try {
++      await carregar();
++    } catch (err) {
++      setStatus("Erro", "error");
++      setFeedback(err.message || "Falha ao carregar.", "error");
++    }
++  } else {
++    loginDiv.classList.remove("hidden");
++    appDiv.classList.add("hidden");
++    setStatus("Faça login");
++  }
++});
++
++btnLogin.addEventListener("click", async () => {
++  setBusy(true);
++  try {
++    await signInWithEmailAndPassword(auth, document.getElementById("email").value.trim(), document.getElementById("senha").value);
++    setFeedback("Login realizado.", "ok");
++  } catch (err) {
++    setStatus("Erro", "error");
++    setFeedback(err.message || "Falha no login.", "error");
++  } finally {
++    setBusy(false);
++  }
++});
++
++btnSalvar.addEventListener("click", async () => {
++  setBusy(true);
++  try {
++    await salvarMovimentacao();
++  } catch (err) {
++    setStatus("Erro", "error");
++    setFeedback(err.message || "Erro ao salvar.", "error");
++  } finally {
++    setBusy(false);
++  }
++});
++
++btnLimpar.addEventListener("click", limparCampos);
++btnLogout.addEventListener("click", async () => {
++  setBusy(true);
++  try {
++    await signOut(auth);
++    limparCampos();
++  } finally {
++    setBusy(false);
++  }
++});
+ </script>
+ 
+ </body>
+ </html>
