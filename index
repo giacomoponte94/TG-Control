@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Controle</title>
+</head>
+<body>
+
+<h2 id="status">Carregando...</h2>
+
+<div id="app" style="display:none;">
+  <p>Estoque: <span id="estoque"></span> mg</p>
+  <p>Receita: R$ <span id="receita"></span></p>
+  <p>Despesa: R$ <span id="despesa"></span></p>
+  <p>Lucro: R$ <span id="lucro"></span></p>
+
+  <button onclick="venda()">Venda</button>
+  <button onclick="compra()">Compra</button>
+  <button onclick="despesa()">Despesa</button>
+</div>
+
+<div id="login">
+  <input id="email" placeholder="email"><br>
+  <input id="senha" type="password" placeholder="senha"><br>
+  <button onclick="logar()">Entrar</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+const firebaseConfig = {// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCMa_S7hytGPJMgf2eBFqEgdjqAoQDRptE",
+  authDomain: "tg-control-da284.firebaseapp.com",
+  projectId: "tg-control-da284",
+  storageBucket: "tg-control-da284.firebasestorage.app",
+  messagingSenderId: "276471927298",
+  appId: "1:276471927298:web:a37d2c8f19f71ce9a6cd1b"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+  
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const ref = doc(db, "app", "dados");
+
+const status = document.getElementById("status");
+const appDiv = document.getElementById("app");
+const loginDiv = document.getElementById("login");
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    carregar();
+  } else {
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
+  }
+});
+
+window.logar = async function() {
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+  await signInWithEmailAndPassword(auth, email, senha);
+};
+
+async function carregar() {
+  const snap = await getDoc(ref);
+  const d = snap.data();
+
+  document.getElementById("estoque").innerText = d.estoque_mg;
+  document.getElementById("receita").innerText = d.receita_total;
+  document.getElementById("despesa").innerText = d.despesa_total;
+  document.getElementById("lucro").innerText = d.receita_total - d.despesa_total;
+
+  status.innerText = "OK";
+}
+
+window.venda = async function() {
+  const mg = Number(prompt("mg:"));
+  const valor = Number(prompt("valor:"));
+
+  const snap = await getDoc(ref);
+  const d = snap.data();
+
+  await updateDoc(ref, {
+    estoque_mg: d.estoque_mg - mg,
+    receita_total: d.receita_total + valor
+  });
+
+  carregar();
+};
+
+window.compra = async function() {
+  const mg = Number(prompt("mg:"));
+  const custo = Number(prompt("custo:"));
+
+  const snap = await getDoc(ref);
+  const d = snap.data();
+
+  await updateDoc(ref, {
+    estoque_mg: d.estoque_mg + mg,
+    despesa_total: d.despesa_total + custo
+  });
+
+  carregar();
+};
+
+window.despesa = async function() {
+  const valor = Number(prompt("valor:"));
+
+  const snap = await getDoc(ref);
+  const d = snap.data();
+
+  await updateDoc(ref, {
+    despesa_total: d.despesa_total + valor
+  });
+
+  carregar();
+};
+</script>
+
+</body>
+</html>
