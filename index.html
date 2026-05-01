@@ -5,47 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TG Control</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
       background: #0f172a;
-      color: #fff;
+      color: #e2e8f0;
       text-align: center;
       padding: 20px;
       margin: 0;
     }
 
-    .wrap {
-      max-width: 900px;
-      margin: 0 auto;
-    }
+    .wrap { max-width: 900px; margin: 0 auto; }
 
     .status {
       display: inline-block;
-      padding: 8px 14px;
+      padding: 6px 14px;
       border-radius: 999px;
       margin-bottom: 16px;
+      font-size: 0.85em;
       background: #1e293b;
       border: 1px solid #334155;
+      color: #94a3b8;
     }
-
-    .status.error { border-color: #ef4444; color: #fecaca; }
     .status.ok    { border-color: #22c55e; color: #bbf7d0; }
+    .status.error { border-color: #ef4444; color: #fecaca; }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .card {
       background: #1e293b;
-      padding: 15px;
+      padding: 16px;
       border-radius: 10px;
       border: 1px solid #334155;
     }
-
-    .card h3 { margin: 0 0 8px; }
+    .card h3 {
+      margin: 0 0 6px;
+      font-size: 0.75em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      letter-spacing: 0.05em;
+    }
+    .card p { margin: 0; font-size: 1.2em; font-weight: bold; }
 
     .panel {
       background: #1e293b;
@@ -53,45 +59,112 @@
       border-radius: 10px;
       border: 1px solid #334155;
       margin-bottom: 12px;
+      text-align: left;
     }
+    .panel > h3 { margin: 0 0 14px; text-align: center; }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .panel-header h3 { margin: 0; }
+
+    input, select {
+      padding: 10px;
+      margin: 4px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0b1220;
+      color: #e2e8f0;
+      font-size: 1em;
+      min-width: 140px;
+    }
+    input:focus, select:focus { outline: none; border-color: #3b82f6; }
 
     button {
       padding: 10px 16px;
-      margin: 5px;
+      margin: 4px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
+      font-size: 0.95em;
+      transition: opacity 0.15s;
     }
-
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:not(:disabled):hover { opacity: 0.85; }
 
     .btn-venda   { background: #22c55e; color: #000; }
     .btn-compra  { background: #3b82f6; color: #fff; }
     .btn-despesa { background: #ef4444; color: #fff; }
     .btn-sec     { background: #475569; color: #fff; }
 
-    input, select {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 6px;
-      border: 1px solid #475569;
-      background: #0b1220;
-      color: white;
-      min-width: 150px;
+    .inputs-row { display: flex; flex-wrap: wrap; justify-content: center; }
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
     }
 
-    .msg { min-height: 20px; color: #cbd5e1; margin: 6px 0 0; }
-    .msg.error { color: #fecaca; }
+    .msg { min-height: 20px; color: #94a3b8; font-size: 0.9em; margin: 8px 0 0; text-align: center; }
     .msg.ok    { color: #bbf7d0; }
+    .msg.error { color: #fecaca; }
 
-    .lucro-neg { color: #fca5a5; }
+    .lucro-neg { color: #fca5a5 !important; }
+
+    /* Histórico */
+    .hist-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .hist-item {
+      display: grid;
+      grid-template-columns: 76px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      background: #0f172a;
+      border-left: 3px solid #475569;
+      font-size: 0.88em;
+    }
+    .hist-item.hist-venda   { border-left-color: #22c55e; }
+    .hist-item.hist-compra  { border-left-color: #3b82f6; }
+    .hist-item.hist-despesa { border-left-color: #ef4444; }
+
+    .hist-badge {
+      font-weight: bold;
+      font-size: 0.72em;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 6px;
+      border-radius: 4px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .hist-venda   .hist-badge { background: #14532d; color: #86efac; }
+    .hist-compra  .hist-badge { background: #1e3a5f; color: #93c5fd; }
+    .hist-despesa .hist-badge { background: #450a0a; color: #fca5a5; }
+
+    .hist-date { color: #94a3b8; white-space: nowrap; }
+    .hist-vals { text-align: right; white-space: nowrap; font-weight: 500; }
+
+    .hist-empty { color: #64748b; font-style: italic; padding: 16px; text-align: center; }
 
     .hidden { display: none !important; }
 
     @media (max-width: 700px) {
       .grid { grid-template-columns: repeat(2, 1fr); }
-      input, select { width: calc(100% - 20px); }
+      input, select { width: 100%; min-width: unset; margin: 4px 0; }
+      .hist-item { grid-template-columns: 70px 1fr; }
+      .hist-vals { grid-column: 2; margin-top: 2px; }
     }
   </style>
 </head>
@@ -99,10 +172,13 @@
 <div class="wrap">
   <h2 id="status" class="status">Carregando...</h2>
 
-  <div id="login" class="panel">
-    <input id="email" type="email" placeholder="Email" autocomplete="email"><br>
-    <input id="senha" type="password" placeholder="Senha" autocomplete="current-password"><br>
-    <button id="btnLogin" class="btn-compra">Entrar</button>
+  <div id="login" class="panel" style="max-width:400px;margin:0 auto 12px;">
+    <h3>TG Control</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input id="email" type="email" placeholder="Email" autocomplete="email" style="width:100%;margin:0;">
+      <input id="senha" type="password" placeholder="Senha" autocomplete="current-password" style="width:100%;margin:0;">
+      <button id="btnLogin" class="btn-compra" style="width:100%;margin:0;">Entrar</button>
+    </div>
     <p id="loginMsg" class="msg"></p>
   </div>
 
@@ -116,26 +192,44 @@
 
     <div class="panel">
       <h3>Nova Movimentação</h3>
-      <select id="tipo">
-        <option value="venda">Venda</option>
-        <option value="compra">Compra</option>
-        <option value="despesa">Despesa</option>
-      </select>
-      <input id="mg" type="number" min="0.01" step="0.01" placeholder="Qtd (mg)">
-      <input id="valor" type="number" min="0.01" step="0.01" placeholder="Valor (R$)">
-      <br>
-      <button id="btnSalvar" class="btn-venda">Salvar Venda</button>
-      <button id="btnLimpar" class="btn-sec">Limpar</button>
-      <button id="btnLogout" class="btn-despesa">Sair</button>
+      <div class="inputs-row">
+        <select id="tipo">
+          <option value="venda">Venda</option>
+          <option value="compra">Compra</option>
+          <option value="despesa">Despesa</option>
+        </select>
+        <input id="mg" type="number" min="0.01" step="0.01" placeholder="Qtd (mg)">
+        <input id="valor" type="number" min="0.01" step="0.01" placeholder="Valor (R$)">
+      </div>
+      <div class="actions-row">
+        <button id="btnSalvar" class="btn-venda">Salvar Venda</button>
+        <button id="btnLimpar" class="btn-sec">Limpar</button>
+        <button id="btnLogout" class="btn-despesa">Sair</button>
+      </div>
       <p id="appMsg" class="msg"></p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Histórico</h3>
+        <button id="btnAtualizar" class="btn-sec" style="padding:6px 12px;font-size:0.82em;">↻ Atualizar</button>
+      </div>
+      <ul id="historico" class="hist-list">
+        <li class="hist-empty">Carregando...</li>
+      </ul>
     </div>
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getFirestore, doc, collection, getDoc, getDocs, runTransaction,
+         query, orderBy, limit, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+// ── Configuração ──────────────────────────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey: "AIzaSyCMa_S7hytGPJMgf2eBFqEgdjqAoQDRptE",
@@ -147,38 +241,53 @@ const firebaseConfig = {
 };
 
 const FIREBASE_ERRORS = {
-  "auth/invalid-credential":      "Email ou senha incorretos.",
-  "auth/user-not-found":          "Usuário não encontrado.",
-  "auth/wrong-password":          "Senha incorreta.",
-  "auth/invalid-email":           "Email inválido.",
-  "auth/user-disabled":           "Conta desativada.",
-  "auth/too-many-requests":       "Muitas tentativas. Tente novamente mais tarde.",
-  "auth/network-request-failed":  "Erro de rede. Verifique sua conexão.",
+  "auth/invalid-credential":     "Email ou senha incorretos.",
+  "auth/user-not-found":         "Usuário não encontrado.",
+  "auth/wrong-password":         "Senha incorreta.",
+  "auth/invalid-email":          "Email inválido.",
+  "auth/user-disabled":          "Conta desativada.",
+  "auth/too-many-requests":      "Muitas tentativas. Tente novamente mais tarde.",
+  "auth/network-request-failed": "Erro de rede. Verifique sua conexão.",
 };
 
 const SALVAR_LABEL = { venda: "Salvar Venda", compra: "Salvar Compra", despesa: "Registrar Despesa" };
-const SALVAR_CLASS = { venda: "btn-venda",    compra: "btn-compra",    despesa: "btn-despesa" };
+const SALVAR_CLASS = { venda: "btn-venda",    compra: "btn-compra",    despesa: "btn-despesa"    };
 
-const fbApp = initializeApp(firebaseConfig);
-const auth  = getAuth(fbApp);
-const db    = getFirestore(fbApp);
-const ref   = doc(db, "app", "dados");
+// ── Firebase ──────────────────────────────────────────────────────────────────
 
-const statusEl  = document.getElementById("status");
-const appDiv    = document.getElementById("app");
-const loginDiv  = document.getElementById("login");
-const appMsg    = document.getElementById("appMsg");
-const loginMsg  = document.getElementById("loginMsg");
-const btnLogin  = document.getElementById("btnLogin");
-const btnSalvar = document.getElementById("btnSalvar");
-const btnLimpar = document.getElementById("btnLimpar");
-const btnLogout = document.getElementById("btnLogout");
-const tipo      = document.getElementById("tipo");
-const mgInput   = document.getElementById("mg");
-const valorInput = document.getElementById("valor");
+const fbApp    = initializeApp(firebaseConfig);
+const auth     = getAuth(fbApp);
+const db       = getFirestore(fbApp);
+const dadosRef = doc(db, "app", "dados");
+const histCol  = collection(db, "movimentacoes");
+
+// ── DOM ───────────────────────────────────────────────────────────────────────
+
+const statusEl    = document.getElementById("status");
+const appDiv      = document.getElementById("app");
+const loginDiv    = document.getElementById("login");
+const appMsg      = document.getElementById("appMsg");
+const loginMsg    = document.getElementById("loginMsg");
+const btnLogin    = document.getElementById("btnLogin");
+const btnSalvar   = document.getElementById("btnSalvar");
+const btnLimpar   = document.getElementById("btnLimpar");
+const btnLogout   = document.getElementById("btnLogout");
+const btnAtualizar = document.getElementById("btnAtualizar");
+const tipo        = document.getElementById("tipo");
+const mgInput     = document.getElementById("mg");
+const valorInput  = document.getElementById("valor");
+const historicoEl = document.getElementById("historico");
+
+// ── Formatação ────────────────────────────────────────────────────────────────
 
 const fmtMoney = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtMg    = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+const fmtDate  = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit", month: "2-digit", year: "2-digit",
+  hour: "2-digit", minute: "2-digit"
+});
+
+// ── Helpers de UI ─────────────────────────────────────────────────────────────
 
 function setStatus(msg, state = "") {
   statusEl.textContent = msg;
@@ -199,32 +308,26 @@ function setLoginBusy(busy) {
 }
 
 function setAppBusy(busy) {
-  [btnSalvar, btnLimpar, btnLogout].forEach((b) => (b.disabled = busy));
+  [btnSalvar, btnLimpar, btnLogout, btnAtualizar].forEach(b => (b.disabled = busy));
 }
 
 function updateSalvarButton() {
   const t = tipo.value;
   btnSalvar.textContent = SALVAR_LABEL[t];
-  btnSalvar.className = SALVAR_CLASS[t];
+  btnSalvar.className   = SALVAR_CLASS[t];
 }
 
 function toggleMg() {
   mgInput.classList.toggle("hidden", tipo.value === "despesa");
 }
 
-function onTipoChange() {
-  toggleMg();
-  updateSalvarButton();
-}
-
-onTipoChange();
-tipo.addEventListener("change", onTipoChange);
-
 function limparCampos() {
   mgInput.value = "";
   valorInput.value = "";
   setMsg(appMsg, "");
 }
+
+// ── Validação de inputs ───────────────────────────────────────────────────────
 
 function normalizeInputs() {
   const action = tipo.value;
@@ -239,8 +342,10 @@ function normalizeInputs() {
   return { action, mg: action === "despesa" ? 0 : mgVal, valor: val };
 }
 
+// ── Firebase: leitura ─────────────────────────────────────────────────────────
+
 async function carregar() {
-  const snap = await getDoc(ref);
+  const snap = await getDoc(dadosRef);
   if (!snap.exists()) throw new Error("Documento app/dados não encontrado.");
 
   const d       = snap.data();
@@ -260,11 +365,42 @@ async function carregar() {
   setStatus("Atualizado", "ok");
 }
 
+async function carregarHistorico() {
+  const q    = query(histCol, orderBy("timestamp", "desc"), limit(20));
+  const snap = await getDocs(q);
+  renderHistorico(snap.docs);
+}
+
+function renderHistorico(docs) {
+  if (docs.length === 0) {
+    historicoEl.innerHTML = `<li class="hist-empty">Nenhuma movimentação registrada.</li>`;
+    return;
+  }
+
+  historicoEl.innerHTML = "";
+  docs.forEach(docSnap => {
+    const d    = docSnap.data();
+    const t    = d.tipo ?? "—";
+    const date = d.timestamp ? fmtDate.format(d.timestamp.toDate()) : "—";
+    const vals = `R$ ${fmtMoney.format(d.valor ?? 0)}${d.mg > 0 ? ` &middot; ${fmtMg.format(d.mg)} mg` : ""}`;
+
+    const li = document.createElement("li");
+    li.className = `hist-item hist-${t}`;
+    li.innerHTML = `
+      <span class="hist-badge">${t}</span>
+      <span class="hist-date">${date}</span>
+      <span class="hist-vals">${vals}</span>`;
+    historicoEl.appendChild(li);
+  });
+}
+
+// ── Firebase: escrita ─────────────────────────────────────────────────────────
+
 async function salvarMovimentacao() {
   const { action, mg: mgVal, valor } = normalizeInputs();
 
   await runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
+    const snap = await tx.get(dadosRef);
     if (!snap.exists()) throw new Error("Documento app/dados não existe.");
 
     const d    = snap.data();
@@ -285,13 +421,26 @@ async function salvarMovimentacao() {
       next.despesa_total += valor;
     }
 
-    tx.update(ref, next);
+    tx.update(dadosRef, next);
+    tx.set(doc(histCol), { tipo: action, valor, mg: mgVal, timestamp: serverTimestamp() });
   });
 
-  await carregar();
+  await Promise.all([carregar(), carregarHistorico()]);
   setMsg(appMsg, "Movimentação salva com sucesso.", "ok");
   limparCampos();
+  (tipo.value !== "despesa" ? mgInput : valorInput).focus();
 }
+
+// ── Inicialização e eventos ───────────────────────────────────────────────────
+
+toggleMg();
+updateSalvarButton();
+
+tipo.addEventListener("change", () => {
+  toggleMg();
+  updateSalvarButton();
+  (tipo.value !== "despesa" ? mgInput : valorInput).focus();
+});
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -299,7 +448,7 @@ onAuthStateChanged(auth, async (user) => {
     appDiv.classList.remove("hidden");
     setMsg(loginMsg, "");
     try {
-      await carregar();
+      await Promise.all([carregar(), carregarHistorico()]);
     } catch (err) {
       setStatus("Erro ao carregar", "error");
       setMsg(appMsg, err.message || "Falha ao carregar.", "error");
@@ -314,8 +463,7 @@ onAuthStateChanged(auth, async (user) => {
 btnLogin.addEventListener("click", async () => {
   const email = document.getElementById("email").value.trim();
   const senha = document.getElementById("senha").value;
-
-  if (!email) { setMsg(loginMsg, "Informe o email.", "error"); return; }
+  if (!email) { setMsg(loginMsg, "Informe o email.",  "error"); return; }
   if (!senha) { setMsg(loginMsg, "Informe a senha.", "error"); return; }
 
   setLoginBusy(true);
@@ -343,6 +491,17 @@ btnSalvar.addEventListener("click", async () => {
 });
 
 btnLimpar.addEventListener("click", limparCampos);
+
+btnAtualizar.addEventListener("click", async () => {
+  setAppBusy(true);
+  try {
+    await Promise.all([carregar(), carregarHistorico()]);
+  } catch (err) {
+    setMsg(appMsg, err.message || "Erro ao atualizar.", "error");
+  } finally {
+    setAppBusy(false);
+  }
+});
 
 btnLogout.addEventListener("click", async () => {
   setAppBusy(true);
