@@ -1,36 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <title>Controle</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TG Control</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --primary: #22c55e;
+      --primary-2: #16a34a;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: #1f2937;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container { width: min(980px, 100%); }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 { margin: 0; }
+
+    .status {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warning);
+    }
+
+    .ok .dot { background: var(--primary); }
+    .error .dot { background: var(--danger); }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .metric small { color: var(--muted); }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .primary { background: var(--primary); }
+    .secondary { background: #334155; color: white; }
+    .danger { background: #7f1d1d; color: white; }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0b1220;
+      color: white;
+    }
+
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
 
-<h2 id="status">Carregando...</h2>
+<div class="container">
 
-<div id="app" style="display:none;">
-  <p>Estoque: <span id="estoque"></span> mg</p>
-  <p>Receita: R$ <span id="receita"></span></p>
-  <p>Despesa: R$ <span id="despesa"></span></p>
-  <p>Lucro: R$ <span id="lucro"></span></p>
+  <div class="topbar">
+    <h1>TG Control</h1>
+    <div id="status" class="status"><div class="dot"></div><span id="statusText">...</span></div>
+  </div>
 
-  <button onclick="venda()">Venda</button>
-  <button onclick="compra()">Compra</button>
-  <button onclick="despesa()">Despesa</button>
-</div>
+  <div id="login" class="card">
+    <input id="email" placeholder="email"><br><br>
+    <input id="senha" type="password" placeholder="senha"><br><br>
+    <button id="btnLogin" class="primary">Entrar</button>
+  </div>
 
-<div id="login">
-  <input id="email" placeholder="email"><br>
-  <input id="senha" type="password" placeholder="senha"><br>
-  <button onclick="logar()">Entrar</button>
+  <div id="app" class="hidden">
+
+    <div class="card">
+      <div class="grid">
+        <div class="metric"><small>Estoque</small><div id="estoque"></div></div>
+        <div class="metric"><small>Receita</small><div id="receita"></div></div>
+        <div class="metric"><small>Despesa</small><div id="despesa"></div></div>
+        <div class="metric"><small>Lucro</small><div id="lucro"></div></div>
+      </div>
+
+      <div class="actions">
+        <button id="btnVenda" class="primary">Venda</button>
+        <button id="btnCompra" class="secondary">Compra</button>
+        <button id="btnDespesa" class="danger">Despesa</button>
+      </div>
+
+      <p id="feedback"></p>
+    </div>
+
+    <div class="card">
+      <input id="mg" placeholder="mg" class="hidden">
+      <input id="valor" placeholder="valor">
+
+      <br><br>
+
+      <button id="confirmar" class="primary">Confirmar</button>
+      <button id="cancelar" class="secondary">Cancelar</button>
+      <button id="logout" class="danger">Sair</button>
+    </div>
+
+  </div>
+
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCMa_S7hytGPJMgf2eBFqEgdjqAoQDRptE",
+  apiKey: "AIzaSy...",
   authDomain: "tg-control-da284.firebaseapp.com",
   projectId: "tg-control-da284",
   storageBucket: "tg-control-da284.firebasestorage.app",
@@ -43,82 +175,97 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const ref = doc(db, "app", "dados");
 
-const status = document.getElementById("status");
-const appDiv = document.getElementById("app");
-const loginDiv = document.getElementById("login");
+let acao = null;
 
-onAuthStateChanged(auth, user => {
-  if (user) {
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    carregar();
-  } else {
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
-    status.innerText = "Faça login";
-  }
-});
+function setStatus(t, type="") {
+  statusText.innerText = t;
+  status.className = "status " + type;
+}
 
-window.logar = async function() {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-  await signInWithEmailAndPassword(auth, email, senha);
-};
+function feedbackMsg(t) {
+  feedback.innerText = t;
+}
 
 async function carregar() {
   const snap = await getDoc(ref);
   const d = snap.data();
 
-  document.getElementById("estoque").innerText = d.estoque_mg;
-  document.getElementById("receita").innerText = d.receita_total;
-  document.getElementById("despesa").innerText = d.despesa_total;
-  document.getElementById("lucro").innerText = d.receita_total - d.despesa_total;
+  estoque.innerText = d.estoque_mg;
+  receita.innerText = d.receita_total;
+  despesa.innerText = d.despesa_total;
+  lucro.innerText = d.receita_total - d.despesa_total;
 
-  status.innerText = "OK";
+  setStatus("OK","ok");
 }
 
-window.venda = async function() {
-  const mg = Number(prompt("mg:"));
-  const valor = Number(prompt("valor:"));
+function iniciar(tipo){
+  acao = tipo;
+  mg.classList.toggle("hidden", tipo==="despesa");
+  mg.focus();
+}
 
-  const snap = await getDoc(ref);
-  const d = snap.data();
+async function confirmarMov(){
+  const v = Number(valor.value);
+  const m = acao !== "despesa" ? Number(mg.value) : 0;
 
-  await updateDoc(ref, {
-    estoque_mg: d.estoque_mg - mg,
-    receita_total: d.receita_total + valor
+  await runTransaction(db, async (t)=>{
+    const snap = await t.get(ref);
+    const d = snap.data();
+
+    if(acao==="venda"){
+      if(d.estoque_mg < m) throw "Sem estoque";
+      t.update(ref,{
+        estoque_mg: d.estoque_mg - m,
+        receita_total: d.receita_total + v
+      });
+    }
+
+    if(acao==="compra"){
+      t.update(ref,{
+        estoque_mg: d.estoque_mg + m,
+        despesa_total: d.despesa_total + v
+      });
+    }
+
+    if(acao==="despesa"){
+      t.update(ref,{
+        despesa_total: d.despesa_total + v
+      });
+    }
   });
 
+  valor.value="";
+  mg.value="";
   carregar();
+  feedbackMsg("Salvo");
+}
+
+onAuthStateChanged(auth, user=>{
+  if(user){
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    carregar();
+  }else{
+    login.classList.remove("hidden");
+    app.classList.add("hidden");
+  }
+});
+
+btnLogin.onclick = async ()=>{
+  await signInWithEmailAndPassword(auth,email.value,senha.value);
 };
 
-window.compra = async function() {
-  const mg = Number(prompt("mg:"));
-  const custo = Number(prompt("custo:"));
+btnVenda.onclick = ()=>iniciar("venda");
+btnCompra.onclick = ()=>iniciar("compra");
+btnDespesa.onclick = ()=>iniciar("despesa");
 
-  const snap = await getDoc(ref);
-  const d = snap.data();
+confirmar.onclick = confirmarMov;
+cancelar.onclick = ()=>{valor.value=""; mg.value="";};
+logout.onclick = ()=>signOut(auth);
 
-  await updateDoc(ref, {
-    estoque_mg: d.estoque_mg + mg,
-    despesa_total: d.despesa_total + custo
-  });
-
-  carregar();
-};
-
-window.despesa = async function() {
-  const valor = Number(prompt("valor:"));
-
-  const snap = await getDoc(ref);
-  const d = snap.data();
-
-  await updateDoc(ref, {
-    despesa_total: d.despesa_total + valor
-  });
-
-  carregar();
-};
+valor.addEventListener("keypress", e=>{
+  if(e.key==="Enter") confirmarMov();
+});
 </script>
 
 </body>
